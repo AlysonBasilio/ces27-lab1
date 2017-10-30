@@ -3,10 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"github.com/pauloaguiar/ces27-lab1/mapreduce"
 	"io/ioutil"
 	"log"
 	"os"
+	"io"
 	"path/filepath"
 )
 
@@ -87,13 +89,13 @@ func fanOutData() (output chan []mapreduce.KeyValue, done chan bool) {
 func splitData(fileName string, chunkSize int) (numMapFiles int, err error) {
 	// 	When you are reading a file and the end-of-file is found, an error is returned.
 	// 	To check for it use the following code:
-	// 		if bytesRead, err = file.Read(buffer); err != nil {
-	// 			if err == io.EOF {
-	// 				// EOF error
-	// 			} else {
-	//				return 0, err
-	//			}
-	// 		}
+			// if bytesRead, err = file.Read(buffer); err != nil {
+			// 	if err == io.EOF {
+			// 		// EOF error
+			// 	} else {
+			// 		return 0, err
+			// 	}
+			// }
 	//
 	// 	Use the mapFileName function to generate the name of the files!
 	//
@@ -111,9 +113,47 @@ func splitData(fileName string, chunkSize int) (numMapFiles int, err error) {
 	// 	to be handled by the caller as the second parameter of the return.
 
 	/////////////////////////
-	// YOUR CODE GOES HERE //
-	/////////////////////////
+	// open input file
+	fmt.Println(fileName)
 	numMapFiles = 0
+  file, err := os.Open(fileName)
+  if err != nil {
+      panic(err)
+  }
+	// make a buffer to keep chunks that are read
+  buf := make([]byte, chunkSize)
+  for {
+      // read a chunk
+      n, err := file.Read(buf)
+      if err != nil && err != io.EOF {
+          panic(err)
+      }
+      if n == 0 {
+          break
+      }
+			numMapFiles += 1
+			// open output file
+		  fo, err := os.Create(strconv.Itoa(numMapFiles)+"output.txt")
+		  if err != nil {
+		      panic(err)
+		  }
+      // write a chunk
+      if _, err := fo.Write(buf); err != nil {
+          panic(err)
+      }
+			if err := fo.Close(); err != nil {
+          panic(err)
+      }
+  }
+  // close fi on exit and check for its returned error
+  defer func() {
+      if err := file.Close(); err != nil {
+          panic(err)
+      }
+  }()
+
+  /////////////////////////
+
 	return numMapFiles, nil
 }
 

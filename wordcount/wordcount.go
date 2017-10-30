@@ -3,6 +3,10 @@ package main
 import (
 	"github.com/pauloaguiar/ces27-lab1/mapreduce"
 	"hash/fnv"
+	// "fmt"
+	"strings"
+	"strconv"
+	"unicode"
 )
 
 // mapFunc is called for each array of bytes read from the splitted files. For wordcount
@@ -24,8 +28,23 @@ func mapFunc(input []byte) (result []mapreduce.KeyValue) {
 
 	/////////////////////////
 	// YOUR CODE GOES HERE //
+	s := []rune(strings.ToLower(string(input[:])))
+	word := ""
+	for i, char := range s{
+		if unicode.IsLetter(rune(char)) || unicode.IsNumber(rune(char)){
+			word+=string(char)
+		} else {
+			if len(word)>0 || i == len(s)-1{
+				result = append(result, mapreduce.KeyValue{word,"1"})
+				word = ""
+			}
+		}
+	}
+	if len(word)>0{
+		result = append(result, mapreduce.KeyValue{word,"1"})
+		word = ""
+	}
 	/////////////////////////
-	result = make([]mapreduce.KeyValue, 0)
 	return result
 }
 
@@ -49,7 +68,43 @@ func reduceFunc(input []mapreduce.KeyValue) (result []mapreduce.KeyValue) {
 	/////////////////////////
 	// YOUR CODE GOES HERE //
 	/////////////////////////
-	result = make([]mapreduce.KeyValue, 0)
+	// fmt.Println("ENTRADA")
+	// for _, k := range input{
+	// 	fmt.Println(k.Key+"-"+k.Value)
+	// }
+	x := false
+	pos := 0
+	for _, keyValue := range input{
+		// fmt.Println(keyValue.Key)
+		x = false
+		for i, k := range result{
+			if k.Key == keyValue.Key{
+				x = true
+				pos = i
+			}
+		}
+		if x{
+			// fmt.Println("Palavra: "+result[pos].Key+" Chave: "+result[pos].Value)
+			y, err := strconv.Atoi(result[pos].Value)
+			if err != nil {
+		      y = 1
+		  }
+			z, err := strconv.Atoi(keyValue.Value)
+			if err != nil {
+		      z = 1
+		  }
+			y += z
+			result[pos].Value = strconv.Itoa(y)
+		}else {
+			result = append(result, mapreduce.KeyValue{keyValue.Key,keyValue.Value})
+		}
+		x = false
+	}
+	// fmt.Println("SAIDA")
+	// for _, k := range result{
+	// 	fmt.Println(k.Key+"-"+k.Value)
+	// }
+
 	return result
 }
 
